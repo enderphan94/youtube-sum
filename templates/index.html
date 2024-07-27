@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Transcript Corrector</title>
+    <script>
+        function extractVideoId(url) {
+            const urlObj = new URL(url);
+            return urlObj.searchParams.get("v");
+        }
+
+        function submitForm() {
+            const urlInput = document.getElementById("youtube-url").value;
+            const videoId = extractVideoId(urlInput);
+
+            if (videoId) {
+                document.getElementById("video-id").value = videoId;
+                document.getElementById("transcript-form").submit();
+            } else {
+                alert("Please enter a valid YouTube URL.");
+            }
+        }
+    </script>
+</head>
+<body>
+    <h1>YouTube Transcript Corrector</h1>
+    <form id="transcript-form" action="/" method="post">
+        <label for="youtube-url">YouTube URL:</label>
+        <input type="text" id="youtube-url" name="youtube-url" required>
+        <input type="hidden" id="video-id" name="video-id">
+        <button type="button" onclick="submitForm()">Get Corrected Transcript</button>
+    </form>
+
+    <h2>Corrected Transcript</h2>
+    <div id="corrected-transcript">
+        <!-- The corrected transcript will be displayed here -->
+        {% if corrected_text %}
+        <p>{{ corrected_text }}</p>
+        {% else %}
+        <p>No transcript processed yet.</p>
+        {% endif %}
+    </div>
+</body>
+</html>
