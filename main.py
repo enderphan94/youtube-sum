@@ -1,10 +1,13 @@
 from flask import Flask, request, render_template
 from youtube_transcript_api import YouTubeTranscriptApi
 import openai
+from dotenv import load_dotenv
+import os
 
 app = Flask(__name__)
 
-openai.api_key = 'sk-proj-87PFObUVCE8cahOVGMSaT3BlbkFJYHdxnzLbAg8xAVVeo4Xc'
+#openai.api_key = 'sk-proj-87PFObUVCE8cahOVGMSaT3BlbkFJYHdxnzLbAg8xAVVeo4Xc'
+openai.api_key = os.environ["OPENAI_API_KEY"]
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
