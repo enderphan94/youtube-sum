@@ -22,6 +22,17 @@ def index():
 
     if request.method == 'POST':
         video_id = request.form.get('video-id')
+        language = request.form.get('language')
+
+        # Determine the language for prompts
+        if language == 'ENG':
+            system_prompt = "You are a high-level assistant that helps to check spelling and correct English text. Do not provide titles."
+            user_prompt_correct = "Correct the spelling and finalize the following text, do not provide titles:"
+            user_prompt_summarize = "Provide 10 key points from the following text, do not provide titles:"
+        else:
+            system_prompt = "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"
+            user_prompt_correct = "Sửa lỗi chính tả và hoàn chỉnh đoạn văn bản sau, không cần đưa ra tiêu đề:"
+            user_prompt_summarize = "Đưa ra 10 ý chính quan trọng trong văn bản, không cần đưa ra tiêu đề:"
 
         try:
             # List all available transcripts
@@ -48,10 +59,10 @@ def index():
                 if selected_transcript == auto_transcript:
                     # Correct the transcript using OpenAI if it's an auto-transcript
                     fixed_response = openai.ChatCompletion.create(
-                        model="gpt-4",  # Ensure this model is available for your API key
+                        model="gpt-4o-mini",  # Ensure this model is available for your API key
                         messages=[
-                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"},
-                            {"role": "user", "content": f"Sửa lỗi chính tả và hoàn chỉnh đoạn văn bản sau, không cần đưa ra tiêu đề: {full_text}"}
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"{user_prompt_correct} {full_text}"}
                         ],
                         max_tokens=4000  # Adjust based on your needs
                     )
@@ -60,41 +71,41 @@ def index():
                     print("Fixed Text:", fixed_text)
 
                     sum_response = openai.ChatCompletion.create(
-                        model="gpt-4",  # Ensure this model is available for your API key
+                        model="gpt-4o-mini",  # Ensure this model is available for your API key
                         messages=[
-                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"},
-                            {"role": "user", "content": f"Đưa ra 10 ý chính quan trọng trong văn bản, không cần đưa ra tiêu đề: {fixed_text}"}
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"{user_prompt_summarize} {fixed_text}"}
                         ],
                         max_tokens=4000  # Adjust based on your needs
                     )
                     summary_text = sum_response['choices'][0]['message']['content'].strip()
 
-                    # print("Summary Text:", summary_text)
+                    print("Summary Text:", summary_text)
 
                     # Split summary text based on numbers, excluding leading empty strings
                     summary_list = re.split(r'\d+\.\s', summary_text)
                     summary_list = [item.strip() for item in summary_list if item.strip()]
 
-                    # print("Summary List:", summary_list)
+                    print("Summary List:", summary_list)
 
                 else:
                     response = openai.ChatCompletion.create(
-                        model="gpt-4",  # Ensure this model is available for your API key
+                        model="gpt-4o-mini",  # Ensure this model is available for your API key
                         messages=[
-                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt."},
-                            {"role": "user", "content": f"Đưa ra 10 ý chính quan trọng trong văn bản: {full_text}"}
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"{user_prompt_summarize} {full_text}"}
                         ],
                         max_tokens=4000  # Adjust based on your needs
                     )
                     summary_text = response['choices'][0]['message']['content'].strip()
 
-                    # print("Summary Text (Manual):", summary_text)
+                    print("Summary Text (Manual):", summary_text)
 
                     # Split summary text based on numbers, excluding leading empty strings
                     summary_list = re.split(r'\d+\.\s', summary_text)
                     summary_list = [item.strip() for item in summary_list if item.strip()]
 
-                    # print("Summary List (Manual):", summary_list)
+                    print("Summary List (Manual):", summary_list)
 
             else:
                 summary_text = "No transcript available"

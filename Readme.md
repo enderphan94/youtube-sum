@@ -1,0 +1,1 @@
+Aims to fix the youtube videos transcript and summarize 10 main key points
