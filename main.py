@@ -3,17 +3,26 @@ from youtube_transcript_api import YouTubeTranscriptApi
 import openai
 from dotenv import load_dotenv
 import os
+import re
 
 app = Flask(__name__)
 
-openai.api_key = os.environ["OPENAI_API_KEY"]
+# Load environment variables from .env file
+load_dotenv()
+
+# Set OpenAI API key
+openai.api_key = os.getenv('OPENAI_API_KEY')
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
     corrected_text = None
+    summary_text = None
+    fixed_text = None
+    summary_list = None
+
     if request.method == 'POST':
         video_id = request.form.get('video-id')
-        
+
         try:
             # List all available transcripts
             all_transcripts = YouTubeTranscriptApi.list_transcripts(video_id)
@@ -38,24 +47,64 @@ def index():
 
                 if selected_transcript == auto_transcript:
                     # Correct the transcript using OpenAI if it's an auto-transcript
-                    response = openai.ChatCompletion.create(
-                        model="gpt-4o-mini",  # You can choose another model if preferred
+                    fixed_response = openai.ChatCompletion.create(
+                        model="gpt-4",  # Ensure this model is available for your API key
                         messages=[
-                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt."},
-                            {"role": "user", "content": f"Sửa lỗi chính tả và hoàn chỉnh đoạn văn bản sau, tóm tắt các ý chính đó ra thành 10 ý chính: {full_text}"}
+                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"},
+                            {"role": "user", "content": f"Sửa lỗi chính tả và hoàn chỉnh đoạn văn bản sau, không cần đưa ra tiêu đề: {full_text}"}
                         ],
                         max_tokens=4000  # Adjust based on your needs
                     )
-                    corrected_text = response.choices[0].message['content'].strip()
+                    fixed_text = fixed_response['choices'][0]['message']['content'].strip()
+
+                    print("Fixed Text:", fixed_text)
+
+                    sum_response = openai.ChatCompletion.create(
+                        model="gpt-4",  # Ensure this model is available for your API key
+                        messages=[
+                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"},
+                            {"role": "user", "content": f"Đưa ra 10 ý chính quan trọng trong văn bản, không cần đưa ra tiêu đề: {fixed_text}"}
+                        ],
+                        max_tokens=4000  # Adjust based on your needs
+                    )
+                    summary_text = sum_response['choices'][0]['message']['content'].strip()
+
+                    # print("Summary Text:", summary_text)
+
+                    # Split summary text based on numbers, excluding leading empty strings
+                    summary_list = re.split(r'\d+\.\s', summary_text)
+                    summary_list = [item.strip() for item in summary_list if item.strip()]
+
+                    # print("Summary List:", summary_list)
+
                 else:
-                    corrected_text = full_text
+                    response = openai.ChatCompletion.create(
+                        model="gpt-4",  # Ensure this model is available for your API key
+                        messages=[
+                            {"role": "system", "content": "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt."},
+                            {"role": "user", "content": f"Đưa ra 10 ý chính quan trọng trong văn bản: {full_text}"}
+                        ],
+                        max_tokens=4000  # Adjust based on your needs
+                    )
+                    summary_text = response['choices'][0]['message']['content'].strip()
+
+                    # print("Summary Text (Manual):", summary_text)
+
+                    # Split summary text based on numbers, excluding leading empty strings
+                    summary_list = re.split(r'\d+\.\s', summary_text)
+                    summary_list = [item.strip() for item in summary_list if item.strip()]
+
+                    # print("Summary List (Manual):", summary_list)
+
             else:
-                corrected_text = "No transcript available"
+                summary_text = "No transcript available"
+                print(summary_text)
 
         except Exception as e:
-            corrected_text = f"An error occurred: {str(e)}"
+            summary_text = f"An error occurred: {str(e)}"
+            print(summary_text)
 
-    return render_template('index.html', corrected_text=corrected_text)
+    return render_template('index.html', corrected_text=fixed_text, summary_list=summary_list)
 
 if __name__ == '__main__':
     app.run(debug=True)
