@@ -32,7 +32,7 @@ def index():
         else:
             system_prompt = "Bạn là trợ lý cấp cao giúp kiểm tra chính tả và sửa chữa văn bản tiếng Việt. Không cần đưa ra tiêu đề"
             user_prompt_correct = "Sửa lỗi chính tả và hoàn chỉnh đoạn văn bản sau, không cần đưa ra tiêu đề:"
-            user_prompt_summarize = "Đưa ra 10 ý chính quan trọng trong văn bản, không cần đưa ra tiêu đề:"
+            user_prompt_summarize = "Đưa ra 10 ý chính quan trọng trong văn bản giúp người đọc nắm được các thông tin chính, không cần đưa ra tiêu đề:"
 
         try:
             # List all available transcripts
@@ -89,23 +89,37 @@ def index():
                     print("Summary List:", summary_list)
 
                 else:
-                    response = openai.ChatCompletion.create(
+                
+                    # Correct the transcript using OpenAI if it's an auto-transcript
+                    fixed_response = openai.ChatCompletion.create(
                         model="gpt-4o-mini",  # Ensure this model is available for your API key
                         messages=[
                             {"role": "system", "content": system_prompt},
-                            {"role": "user", "content": f"{user_prompt_summarize} {full_text}"}
+                            {"role": "user", "content": f"{user_prompt_correct} {full_text}"}
                         ],
                         max_tokens=4000  # Adjust based on your needs
                     )
-                    summary_text = response['choices'][0]['message']['content'].strip()
+                    fixed_text = fixed_response['choices'][0]['message']['content'].strip()
 
-                    print("Summary Text (Manual):", summary_text)
+                    print("Fixed Text:", fixed_text)
+
+                    sum_response = openai.ChatCompletion.create(
+                        model="gpt-4o-mini",  # Ensure this model is available for your API key
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"{user_prompt_summarize} {fixed_text}"}
+                        ],
+                        max_tokens=4000  # Adjust based on your needs
+                    )
+                    summary_text = sum_response['choices'][0]['message']['content'].strip()
+
+                    print("Summary Text:", summary_text)
 
                     # Split summary text based on numbers, excluding leading empty strings
                     summary_list = re.split(r'\d+\.\s', summary_text)
                     summary_list = [item.strip() for item in summary_list if item.strip()]
 
-                    print("Summary List (Manual):", summary_list)
+                    print("Summary List:", summary_list) 
 
             else:
                 summary_text = "No transcript available"
