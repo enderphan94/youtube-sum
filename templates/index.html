@@ -10,10 +10,17 @@
         .summary-list {
             list-style-type: none;
             padding-left: 0;
-            font-family: PublicoText; font-size: 18px; line-height: 27px;
         }
         .summary-list li {
             margin-bottom: 10px;
+        }
+        #loading {
+            display: none;
+            font-size: 20px;
+            text-align: center;
+        }
+        #transcript-content {
+            display: none;
         }
     </style>
     <script>
@@ -22,21 +29,40 @@
             return urlObj.searchParams.get("v");
         }
 
+        function toggleTranscript() {
+            const transcriptContent = document.getElementById('transcript-content');
+            const toggleButton = document.getElementById('toggle-transcript-btn');
+            if (transcriptContent.style.display === 'none') {
+                transcriptContent.style.display = 'block';
+                toggleButton.textContent = 'Hide Transcript';
+            } else {
+                transcriptContent.style.display = 'none';
+                toggleButton.textContent = 'Show Transcript';
+            }
+        }
+
         function submitForm() {
             const urlInput = document.getElementById("youtube-url").value;
             const videoId = extractVideoId(urlInput);
+            const loadingIndicator = document.getElementById('loading');
 
             if (videoId) {
                 document.getElementById("video-id").value = videoId;
                 document.getElementById("transcript-form").submit();
+                loadingIndicator.style.display = 'block'; // Show loading indicator
             } else {
                 alert("Please enter a valid YouTube URL.");
             }
         }
+
+        window.onload = function() {
+            const loadingIndicator = document.getElementById('loading');
+            loadingIndicator.style.display = 'none'; // Hide loading indicator when page loads
+        }
     </script>
 </head>
 <body>
-    <h1>YouTube Transcript Generator</h1>
+    <h1>YouTube Summarizer</h1>
     <form id="transcript-form" action="/" method="post">
         <label for="youtube-url">YouTube URL:</label>
         <input type="text" id="youtube-url" name="youtube-url" required>
@@ -49,13 +75,11 @@
         <button type="button" onclick="submitForm()">Sum</button>
     </form>
 
-    <h2>Transcript</h2>
-    <div id="corrected-transcript">
-        {% if corrected_text %}
-        <p style="font-family: PublicoText; font-size: 18px; line-height: 27px;">{{ corrected_text }}</p>
-        {% endif %}
+    <div id="loading">Loading...</div>
+
+    <h2>Summary</h2>
+    <div id="summary">
         {% if summary_list %}
-        <h3>Summary:</h3>
         <ul class="summary-list">
             {% for item in summary_list %}
                 <li>{{ item }}</li>
@@ -64,6 +88,16 @@
         {% else %}
         <p>No summary available.</p>
         {% endif %}
+    </div>
+
+    <button id="toggle-transcript-btn" onclick="toggleTranscript()">Show Transcript</button>
+    <div id="transcript-content">
+        <h2>Transcript</h2>
+        <div id="corrected-transcript">
+            {% if corrected_text %}
+            <p style="font-family: PublicoText; font-size: 18px; line-height: 27px;">{{ corrected_text }}</p>
+            {% endif %}
+        </div>
     </div>
 </body>
 </html>
